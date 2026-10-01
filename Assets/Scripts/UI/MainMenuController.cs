@@ -21,6 +21,7 @@ namespace RetwineMake.UI
         [SerializeField] Button backButton;
         [SerializeField] Transform levelListParent;
         [SerializeField] LevelEntry[] levels;
+        [SerializeField] Sprite buttonSprite;
 
         void Awake()
         {
@@ -47,17 +48,21 @@ namespace RetwineMake.UI
                 layoutElement.preferredWidth = 420f;
 
                 var image = go.AddComponent<Image>();
-                image.color = new Color(1f, 1f, 1f, 0.08f);
+                image.sprite = buttonSprite;
+                image.type = buttonSprite != null ? Image.Type.Sliced : Image.Type.Simple;
+                image.color = Color.white;
 
                 var button = go.AddComponent<Button>();
+                button.targetGraphic = image;
+                button.colors = UITheme.ButtonColors();
 
                 var textGO = new GameObject("Text", typeof(RectTransform));
                 textGO.transform.SetParent(go.transform, false);
                 var text = textGO.AddComponent<TextMeshProUGUI>();
                 text.text = level.displayName;
                 text.alignment = TextAlignmentOptions.Center;
-                text.fontSize = 26f;
-                text.color = Color.white;
+                text.fontSize = 24f;
+                text.color = UITheme.AccentBright;
                 var textRT = text.rectTransform;
                 textRT.anchorMin = Vector2.zero;
                 textRT.anchorMax = Vector2.one;
