@@ -15,6 +15,16 @@
 /[Uu]ser[Ss]ettings/
 *.log
 
+# Defensive: a stray nested project cache has appeared here before (bad relative
+# working directory from a tool process) - never let it slip into a commit again.
+/ProjectSettings/Library/
+/ProjectSettings/Logs/
+/ProjectSettings/Assets/
+/ProjectSettings/Packages/
+/ProjectSettings/ProjectSettings/
+/ProjectSettings/Temp/
+/ProjectSettings/UserSettings/
+
 # By default unity supports Blender asset imports, *.blend1 blender files do not need to be commited to version control.
 *.blend1
 *.blend1.meta
