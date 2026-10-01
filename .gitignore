@@ -6,6 +6,10 @@
 # See: https://github.com/github/gitignore/tree/main/Global
 #
 .utmp/
+
+# Local-only reference screenshots (copyrighted game footage) - never commit these
+/_reference/
+
 /[Ll]ibrary/
 /[Tt]emp/
 /[Oo]bj/
