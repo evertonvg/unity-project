@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using RetwineMake.Player;
@@ -23,6 +24,7 @@ namespace RetwineMake.Combat
         public float CurrentHealth => currentHealth;
         public float MaxHealth => maxHealth;
         public bool IsDead => isDead;
+        public event Action OnDeath;
 
         void Awake()
         {
@@ -70,6 +72,7 @@ namespace RetwineMake.Combat
             isDead = true;
             col.enabled = false;
             Debug.Log($"[Health] {name} died.");
+            OnDeath?.Invoke();
             StartCoroutine(ToppleRoutine());
         }
 
