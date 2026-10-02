@@ -23,7 +23,7 @@ namespace RetwineMake.UI
             SetAlpha(0f);
 
             if (playerHealth == null)
-                playerHealth = FindFirstObjectByType<PlayerHealth>();
+                playerHealth = FindAnyObjectByType<PlayerHealth>();
         }
 
         void OnEnable()
