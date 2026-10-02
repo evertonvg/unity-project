@@ -74,6 +74,14 @@ namespace RetwineMake.Player
             HandleMove();
         }
 
+        public void Teleport(Vector3 position)
+        {
+            controller.enabled = false;
+            transform.position = position;
+            velocity = Vector3.zero;
+            controller.enabled = true;
+        }
+
         void HandleLook()
         {
             Vector2 look = lookAction.ReadValue<Vector2>();
