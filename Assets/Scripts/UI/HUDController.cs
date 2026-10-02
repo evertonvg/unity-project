@@ -46,7 +46,9 @@ namespace RetwineMake.UI
                 healthText.text = $"HP {Mathf.CeilToInt(playerHealth.CurrentHealth)}/{Mathf.CeilToInt(playerHealth.MaxHealth)}";
 
             if (weapon != null && ammoText != null)
-                ammoText.text = weapon.IsReloading ? "RELOADING" : $"{weapon.CurrentAmmo} / {weapon.MagazineSize}";
+                ammoText.text = weapon.IsReloading
+                    ? $"{weapon.CurrentWeaponName} - RELOADING"
+                    : $"{weapon.CurrentWeaponName}  {weapon.CurrentAmmo} / {weapon.MagazineSize}";
 
             if (deathPanel != null)
                 deathPanel.SetActive(playerHealth != null && playerHealth.IsDead);
