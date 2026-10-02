@@ -10,6 +10,9 @@
 # Local-only reference screenshots (copyrighted game footage) - never commit these
 /_reference/
 
+# Local-only downloaded asset zips (large, re-downloadable) - never commit these
+/_zips/
+
 /[Ll]ibrary/
 /[Tt]emp/
 /[Oo]bj/

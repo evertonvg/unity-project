@@ -20,6 +20,9 @@ namespace RetwineMake.Combat
         Color[] originalColors;
         Collider col;
         Coroutine flashRoutine;
+        Animator animator;
+
+        static readonly int DieHash = Animator.StringToHash("Die");
 
         public float CurrentHealth => currentHealth;
         public float MaxHealth => maxHealth;
@@ -30,6 +33,7 @@ namespace RetwineMake.Combat
         {
             currentHealth = maxHealth;
             col = GetComponent<Collider>();
+            animator = GetComponentInChildren<Animator>();
 
             renderers = GetComponentsInChildren<Renderer>();
             originalColors = new Color[renderers.Length];
@@ -73,7 +77,11 @@ namespace RetwineMake.Combat
             col.enabled = false;
             Debug.Log($"[Health] {name} died.");
             OnDeath?.Invoke();
-            StartCoroutine(ToppleRoutine());
+
+            if (animator != null)
+                animator.SetTrigger(DieHash);
+            else
+                StartCoroutine(ToppleRoutine());
         }
 
         IEnumerator ToppleRoutine()
