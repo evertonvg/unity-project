@@ -31,9 +31,20 @@ namespace RetwineMake.Player
         public float reloadDropDistance = 0.18f;
         public float reloadTiltAngle = 25f;
 
+        [Header("Reload hands & magazine")]
+        public Transform magazine;
+        public Transform gripHand;
+        public Transform supportHand;
+        [Tooltip("Rifle-style angled mag rock in/out (AK) vs a straight pull for a pistol")]
+        public bool angledMagazine;
+
         [NonSerialized] public int currentAmmo;
         [NonSerialized] public Vector3 restLocalPosition;
         [NonSerialized] public Quaternion restLocalRotation;
+        [NonSerialized] public Vector3 magazineRestLocalPosition;
+        [NonSerialized] public Quaternion magazineRestLocalRotation;
+        [NonSerialized] public Vector3 supportHandRestLocalPosition;
+        [NonSerialized] public Quaternion supportHandRestLocalRotation;
     }
 
     public class WeaponController : MonoBehaviour
@@ -82,6 +93,16 @@ namespace RetwineMake.Player
                     w.restLocalPosition = w.weaponModel.localPosition;
                     w.restLocalRotation = w.weaponModel.localRotation;
                     w.weaponModel.gameObject.SetActive(i == currentIndex);
+                }
+                if (w.magazine != null)
+                {
+                    w.magazineRestLocalPosition = w.magazine.localPosition;
+                    w.magazineRestLocalRotation = w.magazine.localRotation;
+                }
+                if (w.supportHand != null)
+                {
+                    w.supportHandRestLocalPosition = w.supportHand.localPosition;
+                    w.supportHandRestLocalRotation = w.supportHand.localRotation;
                 }
             }
         }
@@ -228,19 +249,94 @@ namespace RetwineMake.Player
 
         IEnumerator ReloadRoutine(WeaponSlot w)
         {
+            // Phase split: dip down -> eject old mag -> brief reach -> seat new mag -> rise back up.
+            float tDown = w.reloadDuration * 0.12f;
+            float tEject = w.reloadDuration * 0.28f;
+            float tReach = w.reloadDuration * 0.14f;
+            float tSeat = w.reloadDuration * 0.32f;
+            float tUp = w.reloadDuration - tDown - tEject - tReach - tSeat;
+
             Vector3 downPos = w.restLocalPosition + new Vector3(0f, -w.reloadDropDistance, 0f);
             Quaternion downRot = w.restLocalRotation * Quaternion.Euler(w.reloadTiltAngle, 0f, 0f);
 
-            float half = w.reloadDuration * 0.5f;
-            yield return Tween(w.weaponModel, w.weaponModel.localPosition, downPos, w.weaponModel.localRotation, downRot, half);
+            yield return StartParallel(
+                Tween(w.weaponModel, w.weaponModel.localPosition, downPos, w.weaponModel.localRotation, downRot, tDown),
+                MoveHandTo(w, WellLocalPos(w), WellLocalRot(w, false), tDown));
+
+            if (w.magazine != null)
+            {
+                Vector3 ejectPos = w.magazineRestLocalPosition + (w.angledMagazine
+                    ? new Vector3(0.02f, -0.2f, -0.08f)
+                    : new Vector3(0f, -0.22f, 0f));
+                Quaternion ejectRot = w.magazineRestLocalRotation * Quaternion.Euler(w.angledMagazine ? -45f : -10f, 0f, w.angledMagazine ? 25f : 0f);
+                yield return Tween(w.magazine, w.magazine.localPosition, ejectPos, w.magazine.localRotation, ejectRot, tEject);
+                w.magazine.gameObject.SetActive(false);
+            }
+            else
+            {
+                yield return new WaitForSeconds(tEject);
+            }
+
+            yield return new WaitForSeconds(tReach);
+
+            if (w.magazine != null)
+            {
+                Vector3 insertStartPos = w.magazineRestLocalPosition + (w.angledMagazine
+                    ? new Vector3(-0.02f, -0.2f, 0.1f)
+                    : new Vector3(0f, -0.22f, 0f));
+                Quaternion insertStartRot = w.magazineRestLocalRotation * Quaternion.Euler(w.angledMagazine ? 35f : -10f, 0f, w.angledMagazine ? -20f : 0f);
+                w.magazine.localPosition = insertStartPos;
+                w.magazine.localRotation = insertStartRot;
+                w.magazine.gameObject.SetActive(true);
+
+                yield return StartParallel(
+                    Tween(w.magazine, insertStartPos, w.magazineRestLocalPosition, insertStartRot, w.magazineRestLocalRotation, tSeat),
+                    MoveHandTo(w, WellLocalPos(w), WellLocalRot(w, false), tSeat));
+            }
+            else
+            {
+                yield return new WaitForSeconds(tSeat);
+            }
 
             w.currentAmmo = w.magazineSize;
             Debug.Log($"[Weapon] Reloaded {w.weaponName} - {w.currentAmmo}/{w.magazineSize}");
 
-            yield return Tween(w.weaponModel, w.weaponModel.localPosition, w.restLocalPosition, w.weaponModel.localRotation, w.restLocalRotation, half);
+            yield return StartParallel(
+                Tween(w.weaponModel, w.weaponModel.localPosition, w.restLocalPosition, w.weaponModel.localRotation, w.restLocalRotation, tUp),
+                MoveHandHome(w, tUp));
 
             isReloading = false;
             weaponMotion = null;
+        }
+
+        Vector3 WellLocalPos(WeaponSlot w) => w.magazine != null ? w.magazineRestLocalPosition + new Vector3(0f, -0.05f, 0f) : w.supportHandRestLocalPosition;
+        Quaternion WellLocalRot(WeaponSlot w, bool home) => home ? w.supportHandRestLocalRotation : w.supportHandRestLocalRotation * Quaternion.Euler(20f, 0f, 0f);
+
+        IEnumerator MoveHandTo(WeaponSlot w, Vector3 pos, Quaternion rot, float duration)
+        {
+            if (w.supportHand == null) { yield return new WaitForSeconds(duration); yield break; }
+            yield return Tween(w.supportHand, w.supportHand.localPosition, pos, w.supportHand.localRotation, rot, duration);
+        }
+
+        IEnumerator MoveHandHome(WeaponSlot w, float duration)
+        {
+            if (w.supportHand == null) { yield return new WaitForSeconds(duration); yield break; }
+            yield return Tween(w.supportHand, w.supportHand.localPosition, w.supportHandRestLocalPosition, w.supportHand.localRotation, w.supportHandRestLocalRotation, duration);
+        }
+
+        IEnumerator StartParallel(IEnumerator a, IEnumerator b)
+        {
+            bool aDone = false, bDone = false;
+            StartCoroutine(RunAndFlag(a, () => aDone = true));
+            StartCoroutine(RunAndFlag(b, () => bDone = true));
+            while (!aDone || !bDone)
+                yield return null;
+        }
+
+        IEnumerator RunAndFlag(IEnumerator routine, Action onDone)
+        {
+            yield return StartCoroutine(routine);
+            onDone();
         }
 
         IEnumerator Tween(Transform target, Vector3 fromPos, Vector3 toPos, Quaternion fromRot, Quaternion toRot, float duration)
