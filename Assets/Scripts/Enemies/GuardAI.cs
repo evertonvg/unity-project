@@ -32,6 +32,7 @@ namespace RetwineMake.Enemies
 
         NavMeshAgent agent;
         Health health;
+        GuardWeapon weapon;
         Transform player;
         State state = State.Patrol;
         int currentPoint;
@@ -46,6 +47,7 @@ namespace RetwineMake.Enemies
         {
             agent = GetComponent<NavMeshAgent>();
             health = GetComponent<Health>();
+            weapon = GetComponentInChildren<GuardWeapon>();
 
             var playerObj = GameObject.Find("Player");
             if (playerObj != null)
@@ -158,6 +160,7 @@ namespace RetwineMake.Enemies
         void FireAtPlayer()
         {
             nextFireTime = Time.time + fireCooldown;
+            weapon?.PlayFireAnimation();
 
             if (Random.value <= accuracy)
             {
